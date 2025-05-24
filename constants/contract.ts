@@ -5,7 +5,7 @@ import { warrantyABI } from "./warranty";
 
 const clientId = "a81b28f71aa45b7499e14d244942b8b2";
 
-const factoryAddress = "0x192704C0201CB06b06cce44A9e32690084d72eec";
+export const factoryAddress = "0x192704C0201CB06b06cce44A9e32690084d72eec";
 const warrantyAddress = "0xD42f42deBD0ffD5D01EE63c76a832c3aa00f7e6d";
 
 export const client: ThirdwebClient = createThirdwebClient({

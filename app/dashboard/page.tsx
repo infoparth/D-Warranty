@@ -41,7 +41,12 @@ import CreateCollectionForm from "@/components/create-collection-form";
 import MintNftForm from "@/components/mint-nft-form";
 import { readContract } from "thirdweb";
 import { useActiveAccount, ConnectButton } from "thirdweb/react";
-import { client, factoryContract, nftContract } from "@/constants/contract";
+import {
+  client,
+  factoryAddress,
+  factoryContract,
+  nftContract,
+} from "@/constants/contract";
 import { toast } from "sonner";
 
 interface CollectionData {
@@ -333,7 +338,16 @@ export default function Dashboard() {
                   <History className="mr-2 h-4 w-4" />
                   {isLoadingNfts ? "Refreshing..." : "Refresh Counts"}
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    window.open(
+                      `https://sepolia.etherscan.io/address/${factoryAddress}`,
+                      "_blank"
+                    )
+                  }
+                >
                   <History className="mr-2 h-4 w-4" />
                   Transaction History
                 </Button>
