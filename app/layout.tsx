@@ -7,6 +7,9 @@ export const metadata: Metadata = {
   title: "D-Warranty",
   description: "Decentralized Warranty Management",
   generator: "v0.dev",
+  icons: {
+    icon: "/favicon.png", // or .png/.svg
+  },
 };
 
 export default function RootLayout({

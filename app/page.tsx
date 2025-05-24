@@ -4,21 +4,13 @@ import { ArrowRight, Shield, Wallet, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
-import WalletConnect from "@/components/wallet-connect";
 import { ConnectButton, useActiveAccount } from "thirdweb/react";
 import { client } from "@/constants/contract";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 
 export default function LandingPage() {
-  const account = useActiveAccount();
   const router = useRouter();
 
-  useEffect(() => {
-    if (account) {
-      router.push("/dashboard");
-    }
-  }, [account]);
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
