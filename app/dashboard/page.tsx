@@ -192,22 +192,26 @@ export default function Dashboard() {
           const brandInfo = await readContract({
             contract: factoryContract,
             method: "getBrandInfo",
-            params: [contractAddress],
+            params: [contractAddress?.collectionAddress],
           });
 
           if (brandInfo) {
             // Get NFT count for this collection
-            const nftCount = await getTotalNFTs(contractAddress);
+            const nftCount = await getTotalNFTs(
+              contractAddress?.collectionAddress
+            );
 
             const collection: CollectionData = {
-              address: contractAddress,
+              address: contractAddress?.collectionAddress,
               name: brandInfo.collectionName || "Unknown Collection",
               brandName: brandInfo.brandName || "Unknown Brand",
               productName: brandInfo.productName || "Unknown Product",
               symbol: brandInfo.collectionSymbol || "UNK",
               warrantPeriod: brandInfo.warrantyPeriod?.toString() || "0",
               count: nftCount,
-              date: "Recently created", // You might want to store creation timestamp in contract
+              date:
+                formatTimestamp(Number(brandInfo?.creationTime)) ??
+                "Recently created",
             };
             collectionsData.push(collection);
           }
@@ -313,6 +317,23 @@ export default function Dashboard() {
   }
 
   const displayCollections = isLoading ? demoCollections : collections;
+
+  function formatTimestamp(timestamp: number): string {
+    // Convert seconds to milliseconds
+    const date = new Date(timestamp * 1000);
+
+    // Format options (customize as needed)
+    const options: Intl.DateTimeFormatOptions = {
+      year: "numeric",
+      month: "long", // e.g., "May"
+      day: "numeric",
+      // hour: "2-digit",
+      // minute: "2-digit",
+      // hour12: false, // Use 24-hour format; set to true for AM/PM
+    };
+
+    return date.toLocaleString(undefined, options); // 'undefined' uses user's locale
+  }
 
   return (
     <div className="flex min-h-screen flex-col relative">
@@ -637,7 +658,12 @@ export default function Dashboard() {
         <CreateCollectionForm onClose={handleCollectionCreated} />
       )}
 
-      {account && showMintNft && <MintNftForm onClose={handleNFTMinted} />}
+      {account && showMintNft && (
+        <MintNftForm
+          collection={selectedCollection?.address ?? ""}
+          onClose={handleNFTMinted}
+        />
+      )}
 
       {/* Collection Details Modal - Only shown when wallet is connected */}
       {account && showCollectionDetails && selectedCollection && (

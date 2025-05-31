@@ -22,16 +22,13 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { factoryContract, nftContract, client } from "@/constants/contract";
-import {
-  useActiveAccount,
-  useReadContract,
-  MediaRenderer,
-} from "thirdweb/react";
+import { useActiveAccount, useReadContract } from "thirdweb/react";
 import { prepareContractCall, sendAndConfirmTransaction } from "thirdweb";
 import { upload } from "thirdweb/storage";
 import { readContract } from "thirdweb";
 
 interface MintNftFormProps {
+  collection: string;
   onClose: () => void;
 }
 
@@ -41,10 +38,13 @@ interface CollectionInfo {
   creationTime: BigInt;
 }
 
-export default function MintNftForm({ onClose }: MintNftFormProps) {
+export default function MintNftForm({
+  collection = "",
+  onClose,
+}: MintNftFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    collection: "",
+    collection: collection,
     recipientAddress: "",
     productSerial: "",
     metadata: "",
@@ -181,7 +181,20 @@ export default function MintNftForm({ onClose }: MintNftFormProps) {
     }
   };
 
-  const collections = ["Premium Watches", "Designer Bags", "Electronics"];
+  const collections = [
+    {
+      collectionName: "Premium Watches",
+      collectionAddress: "0x192704C0201CB06b06cce44A9e32690084d72eec",
+    },
+    {
+      collectionName: "Designer Bags",
+      collectionAddress: "0x192704C0201CB06b06cce44A9e32690084d72eec",
+    },
+    {
+      collectionName: "Electronics",
+      collectionAddress: "0x192704C0201CB06b06cce44A9e32690084d72eec",
+    },
+  ];
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
@@ -208,8 +221,11 @@ export default function MintNftForm({ onClose }: MintNftFormProps) {
                 <SelectContent>
                   {(collectionList ? collectionList : collections).map(
                     (collection, key) => (
-                      <SelectItem key={key} value={collection}>
-                        {collection}
+                      <SelectItem
+                        key={key}
+                        value={collection.collectionAddress}
+                      >
+                        {collection?.collectionName}
                       </SelectItem>
                     )
                   )}

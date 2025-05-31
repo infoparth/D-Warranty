@@ -2,8 +2,18 @@
 
 import type React from "react";
 
-import { useState } from "react";
-import { CheckCircle, XCircle, Loader2, Shield, Search } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { useState, useEffect } from "react";
+import {
+  CheckCircle,
+  XCircle,
+  Loader2,
+  Shield,
+  Search,
+  Wallet,
+  Coins,
+  QrCode,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -15,11 +25,19 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
 import { readContract } from "thirdweb";
-import { factoryContract, nftContract } from "@/constants/contract";
+import { factoryContract, nftContract, client } from "@/constants/contract";
+import { ConnectButton, useActiveAccount } from "thirdweb/react";
 
 interface VerificationResult {
   isValid: boolean;
@@ -30,6 +48,11 @@ interface VerificationResult {
     expiryDate: string;
     brand: string;
   };
+}
+
+interface CollectionOption {
+  collectionName: string;
+  collectionAddress: string;
 }
 
 // Placeholder function to simulate NFT warranty verification
@@ -87,6 +110,8 @@ const checkIfValid = async (nftAddress: string, tokenId: number) => {
     params: [BigInt(tokenId)],
   });
 
+  console.log("The contract waeeanty check is : ", isValid);
+
   return isValid;
 };
 
@@ -100,25 +125,53 @@ const getProductInfo = async (nftAddress: string) => {
   return brandInfo;
 };
 
+// Function to get all deployed contracts
+const getDeployedContracts = async (): Promise<CollectionOption[]> => {
+  try {
+    // Replace this with your actual contract method
+    const deployedContracts = await readContract({
+      contract: factoryContract,
+      method: "getDeployedContracts",
+      params: [],
+    });
+
+    return [...deployedContracts];
+  } catch (error) {
+    console.error("Error fetching deployed contracts:", error);
+    // Fallback to demo data if contract call fails
+    return [
+      {
+        collectionName: "Premium Watches",
+        collectionAddress: "0x192704C0201CB06b06cce44A9e32690084d72eec",
+      },
+      {
+        collectionName: "Designer Bags",
+        collectionAddress: "0x292704C0201CB06b06cce44A9e32690084d72eed",
+      },
+      {
+        collectionName: "Electronics",
+        collectionAddress: "0x392704C0201CB06b06cce44A9e32690084d72eee",
+      },
+    ];
+  }
+};
+
 function convertTimestampToDate(
   timestamp: number,
   options?: {
-    format?: "full" | "short" | "numeric"; // full: "October 5, 2023", short: "Oct 5, 2023", numeric: "10/5/2023"
-    includeTime?: boolean; // Whether to include time component
-    timezone?: string; // Timezone (e.g., 'UTC')
+    format?: "full" | "short" | "numeric";
+    includeTime?: boolean;
+    timezone?: string;
   }
 ): string {
-  // Sepolia timestamps are in seconds, convert to milliseconds
   const date = new Date(timestamp * 1000);
 
-  // Default options
   const {
     format = "full",
     includeTime = false,
     timezone = "UTC",
   } = options || {};
 
-  // Formatting configuration
   const formatOptions: Intl.DateTimeFormatOptions = {
     timeZone: timezone,
     year: "numeric",
@@ -131,23 +184,81 @@ function convertTimestampToDate(
     hour12: false,
   };
 
-  // Return formatted date string
   return date.toLocaleDateString("en-US", formatOptions);
 }
 
 export default function CustomerVerifyPage() {
-  const [collectionAddress, setCollectionAddress] = useState("");
+  const [selectedCollection, setSelectedCollection] = useState("");
+  const [customCollectionAddress, setCustomCollectionAddress] = useState("");
   const [tokenId, setTokenId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingCollections, setIsLoadingCollections] = useState(true);
+  const [collections, setCollections] = useState<CollectionOption[]>([]);
   const [verificationResult, setVerificationResult] =
     useState<VerificationResult | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [showCustomAddress, setShowCustomAddress] = useState(false);
+
+  const account = useActiveAccount();
+  // Fetch collections on component mount
+  useEffect(() => {
+    const fetchCollections = async () => {
+      setIsLoadingCollections(true);
+      try {
+        const deployedCollections = await getDeployedContracts();
+        setCollections(deployedCollections);
+      } catch (error) {
+        console.error("Failed to fetch collections:", error);
+      } finally {
+        setIsLoadingCollections(false);
+      }
+    };
+
+    fetchCollections();
+  }, []);
+
+  const handleCollectionChange = (value: string) => {
+    setSelectedCollection(value);
+    if (value === "other") {
+      setShowCustomAddress(true);
+      setCustomCollectionAddress("");
+    } else {
+      setShowCustomAddress(false);
+      setCustomCollectionAddress("");
+    }
+    // Reset verification results when collection changes
+    setVerificationResult(null);
+    setHasSearched(false);
+  };
+
+  const getCollectionAddress = () => {
+    if (selectedCollection === "other") {
+      return customCollectionAddress;
+    }
+    return selectedCollection;
+  };
 
   const handleVerifyWarranty = async () => {
+    const collectionAddress = getCollectionAddress();
+
     if (!collectionAddress.trim() || !tokenId.trim()) {
       setVerificationResult({
         isValid: false,
-        message: "Please enter both collection address and token ID",
+        message: "Please select a collection and enter a token ID",
+      });
+      return;
+    }
+
+    if (
+      selectedCollection === "other" &&
+      (!customCollectionAddress.trim() ||
+        !customCollectionAddress.startsWith("0x") ||
+        customCollectionAddress.length !== 42)
+    ) {
+      setVerificationResult({
+        isValid: false,
+        message:
+          "Please enter a valid collection address (must start with 0x and be 42 characters long)",
       });
       return;
     }
@@ -164,9 +275,23 @@ export default function CustomerVerifyPage() {
       setVerificationResult(result);
       setHasSearched(true);
     } catch (error) {
+      console.log("The error is: ", error);
+      const err = error as Error; // Type assertion
+
+      let errorMessage =
+        "Error occurred while verifying warranty. Please try again.";
+
+      if (
+        err &&
+        typeof err.message === "string" &&
+        err.message.includes("execution reverted: TokenID Invalid")
+      ) {
+        errorMessage = "Token ID does not exist";
+      }
+
       setVerificationResult({
         isValid: false,
-        message: "Error occurred while verifying warranty. Please try again.",
+        message: errorMessage,
       });
       setHasSearched(true);
     } finally {
@@ -178,6 +303,11 @@ export default function CustomerVerifyPage() {
     if (e.key === "Enter" && !isLoading) {
       handleVerifyWarranty();
     }
+  };
+
+  const isFormValid = () => {
+    const collectionAddress = getCollectionAddress();
+    return collectionAddress.trim() !== "" && tokenId.trim() !== "";
   };
 
   return (
@@ -195,7 +325,7 @@ export default function CustomerVerifyPage() {
                 Verify Product Warranty
               </h1>
               <p className="text-muted-foreground">
-                Enter your NFT collection address and token ID to verify your
+                Select your NFT collection and enter the token ID to verify your
                 product warranty status
               </p>
             </div>
@@ -205,29 +335,73 @@ export default function CustomerVerifyPage() {
               <CardHeader>
                 <CardTitle>Warranty Verification</CardTitle>
                 <CardDescription>
-                  Provide the NFT details to check your product's warranty
-                  status
+                  Choose your NFT collection and provide the token ID to check
+                  your product's warranty status
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="collectionAddress">
-                    NFT Collection Address
-                  </Label>
-                  <Input
-                    id="collectionAddress"
-                    type="text"
-                    placeholder="0x..."
-                    value={collectionAddress}
-                    onChange={(e) => setCollectionAddress(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    disabled={isLoading}
-                    className="font-mono text-sm"
-                  />
+                  <Label htmlFor="collection">NFT Collection</Label>
+                  {isLoadingCollections ? (
+                    <div className="flex h-10 items-center justify-center rounded-md border bg-muted">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="ml-2 text-sm text-muted-foreground">
+                        Loading collections...
+                      </span>
+                    </div>
+                  ) : (
+                    <Select
+                      value={selectedCollection}
+                      onValueChange={handleCollectionChange}
+                      disabled={isLoading}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a collection" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {collections.map((collection, index) => (
+                          <SelectItem
+                            key={index}
+                            value={collection.collectionAddress}
+                          >
+                            {collection.collectionName}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="other">
+                          Other (Custom Address)
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
                   <p className="text-xs text-muted-foreground">
-                    The smart contract address of your NFT collection
+                    Select your NFT collection from the list or choose "Other"
+                    to enter a custom address
                   </p>
                 </div>
+
+                {/* Custom Collection Address Input */}
+                {showCustomAddress && (
+                  <div className="space-y-2">
+                    <Label htmlFor="customCollectionAddress">
+                      Custom Collection Address
+                    </Label>
+                    <Input
+                      id="customCollectionAddress"
+                      type="text"
+                      placeholder="0x..."
+                      value={customCollectionAddress}
+                      onChange={(e) =>
+                        setCustomCollectionAddress(e.target.value)
+                      }
+                      onKeyPress={handleKeyPress}
+                      disabled={isLoading}
+                      className="font-mono text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Enter the smart contract address of your NFT collection
+                    </p>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="tokenId">NFT Token ID</Label>
@@ -247,9 +421,7 @@ export default function CustomerVerifyPage() {
 
                 <Button
                   onClick={handleVerifyWarranty}
-                  disabled={
-                    isLoading || !collectionAddress.trim() || !tokenId.trim()
-                  }
+                  disabled={isLoading || !isFormValid()}
                   className="w-full"
                   size="lg"
                 >
@@ -347,16 +519,64 @@ export default function CustomerVerifyPage() {
             <Alert className="mt-6">
               <Shield className="h-4 w-4" />
               <AlertDescription>
-                <strong>Need help?</strong> You can find your NFT collection
-                address and token ID in your wallet or on blockchain explorers
-                like Etherscan. If you're having trouble, contact our support
-                team.
+                <strong>Need help?</strong> Select your NFT collection from the
+                dropdown, or choose "Other" to enter a custom collection
+                address. You can find your token ID in your wallet or on
+                blockchain explorers like Etherscan. If you're having trouble,
+                contact our support team.
               </AlertDescription>
             </Alert>
           </div>
         </div>
       </main>
       <Footer />
+      {!account && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <Card className="w-full max-w-md mx-4 border-2 shadow-2xl">
+            <CardHeader className="text-center space-y-4">
+              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-purple-500 to-cyan-500 rounded-full flex items-center justify-center">
+                <Wallet className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-2xl font-bold">
+                  Connect Your Wallet
+                </CardTitle>
+                <CardDescription className="mt-2 text-base">
+                  You need to connect your wallet to access the NFT warranty
+                  dashboard and manage your collections.
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <Shield className="h-4 w-4 text-green-500" />
+                  <span>Create and manage NFT collections</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <Coins className="h-4 w-4 text-blue-500" />
+                  <span>Mint warranty NFTs</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <QrCode className="h-4 w-4 text-purple-500" />
+                  <span>Track and verify warranties</span>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="text-center">
+                <ConnectButton client={client} />
+              </div>
+
+              <div className="text-xs text-center text-muted-foreground">
+                By connecting your wallet, you agree to our terms of service and
+                privacy policy.
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

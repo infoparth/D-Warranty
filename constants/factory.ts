@@ -119,9 +119,21 @@ export const factoryABI = [
     name: "getBrandOwnedCollections",
     outputs: [
       {
-        internalType: "address[]",
+        components: [
+          {
+            internalType: "string",
+            name: "collectionName",
+            type: "string",
+          },
+          {
+            internalType: "address",
+            name: "collectionAddress",
+            type: "address",
+          },
+        ],
+        internalType: "struct NFTFactory.BrandsInfo[]",
         name: "",
-        type: "address[]",
+        type: "tuple[]",
       },
     ],
     stateMutability: "view",
@@ -132,9 +144,21 @@ export const factoryABI = [
     name: "getDeployedContracts",
     outputs: [
       {
-        internalType: "address[]",
+        components: [
+          {
+            internalType: "string",
+            name: "collectionName",
+            type: "string",
+          },
+          {
+            internalType: "address",
+            name: "collectionAddress",
+            type: "address",
+          },
+        ],
+        internalType: "struct NFTFactory.BrandsInfo[]",
         name: "",
-        type: "address[]",
+        type: "tuple[]",
       },
     ],
     stateMutability: "view",
@@ -200,8 +224,13 @@ export const factoryABI = [
     name: "s_brandOwnedCollections",
     outputs: [
       {
+        internalType: "string",
+        name: "collectionName",
+        type: "string",
+      },
+      {
         internalType: "address",
-        name: "",
+        name: "collectionAddress",
         type: "address",
       },
     ],
@@ -219,8 +248,13 @@ export const factoryABI = [
     name: "s_deployedContracts",
     outputs: [
       {
+        internalType: "string",
+        name: "collectionName",
+        type: "string",
+      },
+      {
         internalType: "address",
-        name: "",
+        name: "collectionAddress",
         type: "address",
       },
     ],
