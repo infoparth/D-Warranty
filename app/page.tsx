@@ -17,7 +17,7 @@ export default function LandingPage() {
       <main className="flex-1">
         {/* Hero Section */}
         <section className="relative overflow-hidden bg-gradient-to-b from-background to-background/80 py-24 md:py-32">
-          <div className="absolute inset-0 bg-[url('/placeholder.svg?height=600&width=1200')] bg-center bg-no-repeat opacity-5"></div>
+          <div className="absolute inset-0 bg-[url('/placeholder.svg?height=600&width=1200')] bg-center bg-no-repeat pointer-events-none opacity-5"></div>
           <div className="container px-4 md:px-6">
             <div className="grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_600px]">
               <div className="flex flex-col justify-center space-y-4">
@@ -32,10 +32,6 @@ export default function LandingPage() {
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                  {/* <WalletConnect
-                    buttonText="Connect Wallet"
-                    buttonIcon={<Wallet className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />}
-                  /> */}
                   <ConnectButton
                     client={client}
                     onConnect={() => router.push("/dashboard")}
